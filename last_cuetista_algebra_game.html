@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Last Cuetista - Algebra Practice</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to right, #1e3c72, #2a5298);
+    color: white;
+    margin: 0;
+    padding: 0;
+  }
+  #loginScreen, #gameScreen {
+    max-width: 600px;
+    margin: 3rem auto;
+    background: rgba(0,0,0,0.6);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 0 15px #000;
+  }
+  input[type=text] {
+    font-size: 1.2rem;
+    padding: 0.5rem;
+    width: 100%;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+    border: none;
+  }
+  button {
+    background: #6a9fb5;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    padding: 0.5rem 1.2rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #9ec9e2;
+  }
+  #story {
+    background: #224466cc;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-style: italic;
+  }
+  #problem {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  #answerInput {
+    font-size: 1.2rem;
+    padding: 0.4rem;
+    width: 100%;
+    border-radius: 5px;
+    border: none;
+    margin-bottom: 1rem;
+  }
+  #feedback {
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+  #scoreBoard {
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h1>The Last Cuetista: Algebra Quest</h1>
+  <p>Enter your adventurer name to begin your quest:</p>
+  <input type="text" id="usernameInput" placeholder="Your name here" autocomplete="off" />
+  <button id="loginBtn">Start Quest</button>
+</div>
+
+<div id="gameScreen" style="display:none;">
+  <h2>Welcome, <span id="playerName"></span>!</h2>
+  <div id="story"></div>
+  <div id="problem"></div>
+  <input type="number" id="answerInput" autocomplete="off" />
+  <button id="submitAnswerBtn">Submit Answer</button>
+  <div id="feedback"></div>
+  <div id="scoreBoard">
+    Correct Answers: <span id="correctCount">0</span> / <span id="totalCount">0</span><br />
+    Streak: <span id="streakCount">0</span>
+  </div>
+  <button id="logoutBtn" style="margin-top: 2rem; background:#b55353;">Logout</button>
+</div>
+
+<script>
+(() => {
+  const loginScreen = document.getElementById('loginScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const usernameInput = document.getElementById('usernameInput');
+  const loginBtn = document.getElementById('loginBtn');
+  const playerNameSpan = document.getElementById('playerName');
+  const storyDiv = document.getElementById('story');
+  const problemDiv = document.getElementById('problem');
+  const answerInput = document.getElementById('answerInput');
+  const submitAnswerBtn = document.getElementById('submitAnswerBtn');
+  const feedbackDiv = document.getElementById('feedback');
+  const correctCountSpan = document.getElementById('correctCount');
+  const totalCountSpan = document.getElementById('totalCount');
+  const streakCountSpan = document.getElementById('streakCount');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const storySegments = [
+    "In the dim light of the ancient cue, the last Cuetista steps forward, armed with numbers instead of a bow.",
+    "To save the realm from chaos, she must solve the riddles of multiplication and the shifting sands of addition and subtraction.",
+    "A shadowy figure approaches, blocking your path. 'Answer me this,' it growls, 'what is the product of your fate?'",
+    "The Cuetista recalls the sacred tables — mastering numbers 1 through 12 is her only hope.",
+    "The path forks: one way bright, the other dark. Only a correct sum or difference will reveal the true way.",
+    "With each correct answer, the power of the last Cuetista grows stronger, pushing back the forces of confusion.",
+    "The final challenge awaits: master multiplication and integers to restore balance and light to the realm."
+  ];
+
+  let username = "";
+  let correctCount = 0;
+  let totalCount = 0;
+  let streakCount = 0;
+  let currentAnswer = 0;
+  let storyIndex = 0;
+
+  function saveProgress() {
+    const data = { correctCount, totalCount, streakCount, storyIndex };
+    localStorage.setItem(`cuetista_${username}`, JSON.stringify(data));
+  }
+
+  function loadProgress() {
+    const dataStr = localStorage.getItem(`cuetista_${username}`);
+    if (dataStr) {
+      try {
+        const data = JSON.parse(dataStr);
+        correctCount = data.correctCount || 0;
+        totalCount = data.totalCount || 0;
+        streakCount = data.streakCount || 0;
+        storyIndex = data.storyIndex || 0;
+      } catch {
+        correctCount = 0; totalCount = 0; streakCount = 0; storyIndex = 0;
+      }
+    }
+  }
+
+  function updateScoreBoard() {
+    correctCountSpan.textContent = correctCount;
+    totalCountSpan.textContent = totalCount;
+    streakCountSpan.textContent = streakCount;
+  }
+
+  function nextStorySegment() {
+    storyDiv.textContent = storyIndex < storySegments.length
+      ? storySegments[storyIndex]
+      : "Your quest is complete! The realm is saved thanks to your wisdom.";
+  }
+
+  function generateProblem() {
+    if (totalCount % 2 === 0) {
+      const a = Math.floor(Math.random() * 12) + 1;
+      const b = Math.floor(Math.random() * 12) + 1;
+      currentAnswer = a * b;
+      problemDiv.textContent = `What is ${a} × ${b}?`;
+    } else {
+      const a = Math.floor(Math.random() * 25) - 12;
+      const b = Math.floor(Math.random() * 25) - 12;
+      const op = Math.random() < 0.5 ? '+' : '-';
+      currentAnswer = op === '+' ? a + b : a - b;
+      problemDiv.textContent = `What is ${a} ${op} ${b}?`;
+    }
+  }
+
+  function resetGame() {
+    correctCount = 0; totalCount = 0; streakCount = 0; storyIndex = 0;
+  }
+
+  function startGame() {
+    loginScreen.style.display = "none";
+    gameScreen.style.display = "block";
+    playerNameSpan.textContent = username;
+    loadProgress();
+    updateScoreBoard();
+    nextStorySegment();
+    generateProblem();
+    answerInput.value = "";
+    feedbackDiv.textContent = "";
+    answerInput.focus();
+  }
+
+  loginBtn.addEventListener('click', () => {
+    const name = usernameInput.value.trim();
+    if (name.length < 2) return alert("Please enter a valid name.");
+    username = name;
+    startGame();
+  });
+
+  submitAnswerBtn.addEventListener('click', () => {
+    const val = answerInput.value.trim();
+    const numVal = Number(val);
+    if (val === "" || isNaN(numVal)) return alert("Answer must be a number.");
+    totalCount++;
+    if (numVal === currentAnswer) {
+      correctCount++; streakCount++;
+      feedbackDiv.textContent = "✅ Correct!";
+      if (correctCount % 3 === 0 && storyIndex < storySegments.length) {
+        storyIndex++; nextStorySegment();
+      }
+    } else {
+      streakCount = 0;
+      feedbackDiv.textContent = `❌ Incorrect. The answer was ${currentAnswer}.`;
+    }
+    updateScoreBoard();
+    saveProgress();
+    generateProblem();
+    answerInput.value = "";
+    answerInput.focus();
+  });
+
+  answerInput.addEventListener('keyup', e => {
+    if (e.key === 'Enter') submitAnswerBtn.click();
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    if (confirm("Logout? Your progress will be saved.")) {
+      saveProgress();
+      username = "";
+      loginScreen.style.display = "block";
+      gameScreen.style.display = "none";
+      usernameInput.value = "";
+      feedbackDiv.textContent = "";
+      resetGame();
+    }
+  });
+
+  usernameInput.focus();
+})();
+</script>
+
+</body>
+</html>
